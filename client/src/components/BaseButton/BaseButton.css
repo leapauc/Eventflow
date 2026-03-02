@@ -1,12 +1,3 @@
-<template>
-  <button class="base-button">
-    <slot />
-  </button>
-</template>
-
-<script setup></script>
-
-<style scoped>
 .base-button {
   padding: 10px;
   border-radius: 8px;
@@ -20,4 +11,3 @@
 .base-button:hover {
   opacity: 0.9;
 }
-</style>

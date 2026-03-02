@@ -43,11 +43,11 @@ import { ref, onMounted, computed } from "vue";
 import { useEventStore } from "../stores/eventStore";
 import { useUserStore } from "../stores/userStore";
 
-import EventCard from "../components/EventCard.vue";
-import EventModal from "../components/EventModal.vue";
-import BaseButton from "../components/BaseButton.vue";
-import ConfirmModal from "../components/ConfirmModal.vue";
-import NoSeatsModal from "../components/NoSeatsModal.vue";
+import EventCard from "../components/EventCard/EventCard.vue";
+import EventModal from "../components/EventModal/EventModal.vue";
+import BaseButton from "../components/BaseButton/BaseButton.vue";
+import ConfirmModal from "../components/ConfirmModal/ConfirmModal.vue";
+import NoSeatsModal from "../components/NoSeatsModal/NoSeatsModal.vue";
 
 const eventStore = useEventStore();
 const userStore = useUserStore();

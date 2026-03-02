@@ -36,7 +36,7 @@
 import { ref } from "vue";
 import { useUserStore } from "../stores/userStore";
 import { useRouter } from "vue-router";
-import BaseButton from "../components/BaseButton.vue";
+import BaseButton from "../components/BaseButton/BaseButton.vue";
 
 const email = ref("");
 const password = ref("");

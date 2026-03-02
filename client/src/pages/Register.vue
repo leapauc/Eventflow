@@ -30,7 +30,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import BaseButton from "../components/BaseButton.vue";
+import BaseButton from "../components/BaseButton/BaseButton.vue";
 
 const name = ref("");
 const email = ref("");
