@@ -30,9 +30,10 @@ export default {
         if (props.mode === "edit" && newVal) {
           title.value = newVal.title;
           description.value = newVal.description;
-          date.value = newVal.date;
+          // Extraire juste la date YYYY-MM-DD pour input type="date"
+          date.value = newVal.date.split("T")[0];
           location.value = newVal.location;
-          totalSeats.value = newVal.totalSeats ?? newVal.remainingSeats;
+          totalSeats.value = newVal.totalSeats ?? newVal.totalSeats;
         } else {
           title.value = "";
           description.value = "";
@@ -44,52 +45,40 @@ export default {
       { immediate: true },
     );
 
-    const handleClose = () => {
-      emit("close");
-    };
+    const handleClose = () => emit("close");
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+      const userId = userStore.user?.id;
+
+      // Vérifier que l'utilisateur est connecté
+      if (props.mode === "create" && !userId) {
+        alert("Erreur : utilisateur non connecté !");
+        console.error("Utilisateur non connecté :", userStore.user);
+        return;
+      }
+
+      // Construction de l'objet événement
+      const eventPayload = {
+        title: title.value,
+        description: description.value,
+        date: new Date(date.value).toISOString(),
+        location: location.value,
+        totalSeats: totalSeats.value,
+      };
+
       if (props.mode === "create") {
-        const newEvent = {
-          id: Date.now(),
-          title: title.value,
-          description: description.value,
-          date: date.value,
-          location: location.value,
-          totalSeats: totalSeats.value,
-          remainingSeats: totalSeats.value,
-          createdBy: userStore.user?.name,
-        };
-
-        eventStore.addEvent(newEvent);
+        eventPayload.createdBy = userId; // <-- l'ID correct
+        console.log("Création d'un nouvel événement :", eventPayload);
+        await eventStore.addEvent(eventPayload);
       }
 
       if (props.mode === "edit") {
-        const index = eventStore.events.findIndex(
-          (e) => e.id === props.eventData.id,
+        console.log(
+          "Mise à jour de l'événement ID:",
+          props.eventData.id_event,
+          eventPayload,
         );
-
-        if (index !== -1) {
-          const event = eventStore.events[index];
-
-          const usedSeats = event.totalSeats - event.remainingSeats;
-
-          let newRemainingSeats = totalSeats.value - usedSeats;
-
-          if (newRemainingSeats < 0) {
-            newRemainingSeats = 0;
-          }
-
-          eventStore.events[index] = {
-            ...event,
-            title: title.value,
-            description: description.value,
-            date: date.value,
-            location: location.value,
-            totalSeats: totalSeats.value,
-            remainingSeats: newRemainingSeats,
-          };
-        }
+        await eventStore.updateEvent(props.eventData.id_event, eventPayload);
       }
 
       emit("close");

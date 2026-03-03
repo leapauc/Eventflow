@@ -6,10 +6,10 @@
     <h3>{{ event.title }}</h3>
 
     <p>{{ event.description }}</p>
-    <p>📅 {{ event.date }}</p>
+    <p>📅 {{ event.date.split("T")[0] }}</p>
     <p>📍 {{ event.location }}</p>
-    <p>🎟 Total: {{ event.totalSeats }}</p>
-    <p>🟢 Restantes: {{ event.remainingSeats }}</p>
+    <p>🎟 Total: {{ event.totalseats }}</p>
+    <p>🟢 Restantes: {{ event.remaining_seats }}</p>
 
     <div class="card-buttons">
       <!-- Admin / Organisateur -->

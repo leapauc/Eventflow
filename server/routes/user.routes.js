@@ -11,8 +11,8 @@ const {
 } = require("../controllers/user.controller");
 
 // Public
-router.post("/login", loginUser);
-router.post("/register", registerUser);
+router.post("/auth/login", loginUser);
+router.post("/auth/register", registerUser);
 
 // Admin
 router.get("/", getAllUsers);

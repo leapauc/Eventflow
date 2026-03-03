@@ -22,33 +22,32 @@ export default {
 
     const isRegistered = computed(() => {
       return registrationStore.isUserRegistered(
-        props.event.id,
-        userStore.user?.id,
+        props.event.id_event,
+        userStore.user?.id_user,
       );
     });
 
     const buttonText = computed(() => {
-      if (props.event.remainingSeats === 0) return "Complet";
+      if (props.event.remaining_seats === 0) return "Complet";
       if (isRegistered.value) return "Déjà inscrit";
       return "S'inscrire";
     });
 
     const handleRegister = () => {
-      if (props.event.remainingSeats <= 0) return;
+      if (props.event.remaining_seats <= 0) return;
 
-      const success = eventStore.registerForEvent(props.event.id);
+      const success = eventStore.registerForEvent(props.event.id_event);
 
       if (success) {
-        registrationStore.register(props.event.id, userStore.user?.id);
+        registrationStore.register(props.event.id_event, userStore.user?.name);
       }
     };
 
     const handleUnregister = () => {
-      const userId = userStore.user?.id;
+      const userName = userStore.user?.name;
 
-      registrationStore.unregister(props.event.id, userId);
-
-      eventStore.unregisterFromEvent(props.event.id);
+      registrationStore.unregister(props.event.id_event, userName);
+      eventStore.unregisterFromEvent(props.event.id_event);
     };
 
     const handleEdit = () => emit("edit", props.event);

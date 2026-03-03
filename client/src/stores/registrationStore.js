@@ -1,93 +1,69 @@
 import { defineStore } from "pinia";
-import { useEventStore } from "./eventStore";
+import api from "@/services/api";
 
 export const useRegistrationStore = defineStore("registration", {
   state: () => ({
-    registrations: JSON.parse(localStorage.getItem("registrations")) || [],
+    loading: false,
+    registrations: [], // ← pour savoir qui est inscrit
   }),
 
-  actions: {
-    // =====================
-    // LOCAL STORAGE
-    // =====================
-
-    saveToLocalStorage() {
-      localStorage.setItem("registrations", JSON.stringify(this.registrations));
+  getters: {
+    // Vérifie si un utilisateur est inscrit à un événement
+    isUserRegistered: (state) => {
+      return (eventId, userId) => {
+        return state.registrations.some(
+          (r) => r.eventId === eventId && r.userId === userId,
+        );
+      };
     },
+  },
 
+  actions: {
     // =====================
     // INSCRIPTION
     // =====================
 
-    register(eventId, userId) {
-      const alreadyRegistered = this.isUserRegistered(eventId, userId);
+    async register(eventId, userId) {
+      try {
+        this.loading = true;
 
-      if (alreadyRegistered) return;
+        await api.post(`/event/${eventId}/register`, {
+          id_user: userId,
+        });
 
-      this.registrations.push({
-        eventId,
-        userId,
-      });
-
-      this.saveToLocalStorage();
+        // mise à jour locale
+        this.registrations.push({
+          eventId,
+          userId,
+        });
+      } catch (error) {
+        console.error(error.response?.data);
+      } finally {
+        this.loading = false;
+      }
     },
 
     // =====================
     // DESINSCRIPTION
     // =====================
 
-    unregister(eventId, userId) {
-      this.registrations = this.registrations.filter(
-        (r) => !(r.eventId === eventId && r.userId === userId),
-      );
+    async unregister(eventId, userId) {
+      try {
+        this.loading = true;
 
-      this.saveToLocalStorage();
-    },
+        await api.delete(`/event/${eventId}/unregister`, {
+          data: { id_user: userId },
+        });
 
-    // =====================
-    // VERIFICATION
-    // =====================
-
-    isUserRegistered(eventId, userId) {
-      return this.registrations.some(
-        (r) => r.eventId === eventId && r.userId === userId,
-      );
-    },
-
-    // =====================
-    // SUPPRESSION UTILISATEUR
-    // =====================
-
-    removeUserFromAllEvents(userId) {
-      const eventStore = useEventStore();
-
-      // 🔥 Récupérer toutes les inscriptions de l'utilisateur
-      const userRegistrations = this.registrations.filter(
-        (r) => r.userId === userId,
-      );
-
-      // 🔥 Pour chaque inscription → remettre une place
-      userRegistrations.forEach((r) => {
-        const event = eventStore.events.find((e) => e.id === r.eventId);
-
-        if (event) {
-          // On remet une place seulement si nécessaire
-          if (event.remainingSeats < event.totalSeats) {
-            event.remainingSeats += 1;
-          }
-        }
-      });
-
-      // 🔥 Supprimer toutes les registrations de l'utilisateur
-      this.registrations = this.registrations.filter(
-        (r) => r.userId !== userId,
-      );
-
-      // 🔥 Sauvegarder les events
-      eventStore.saveToLocalStorage();
-
-      // 🔥 Sauvegarder les registrations
-      this.saveToLocalStorage();
+        // suppression locale
+        this.registrations = this.registrations.filter(
+          (r) => !(r.eventId === eventId && r.userId === userId),
+        );
+      } catch (error) {
+        console.error(error.response?.data);
+      } finally {
+        this.loading = false;
+      }
     },
   },
 });

@@ -12,7 +12,7 @@
     <div class="events-grid">
       <EventCard
         v-for="event in filteredEvents"
-        :key="event.id"
+        :key="event.id_event"
         :event="event"
         @edit="openEdit"
         @delete="openDelete"
@@ -33,8 +33,6 @@
       @close="showConfirm = false"
       @confirm="confirmDelete"
     />
-
-    <NoSeatsModal :visible="showFullModal" @close="showFullModal = false" />
   </div>
 </template>
 
@@ -47,7 +45,6 @@ import EventCard from "../components/EventCard/EventCard.vue";
 import EventModal from "../components/EventModal/EventModal.vue";
 import BaseButton from "../components/BaseButton/BaseButton.vue";
 import ConfirmModal from "../components/ConfirmModal/ConfirmModal.vue";
-import NoSeatsModal from "../components/NoSeatsModal/NoSeatsModal.vue";
 
 const eventStore = useEventStore();
 const userStore = useUserStore();
@@ -59,22 +56,22 @@ const eventToDelete = ref(null);
 const showFullModal = ref(false);
 const selectedEvent = ref(null);
 
+// Récupération des événements au chargement
 onMounted(() => {
   eventStore.fetchEvents();
 });
 
+// Tous les utilisateurs voient tous les événements
 const filteredEvents = computed(() => {
   if (userStore.isAdmin) {
     return eventStore.events;
-  }
-
-  if (userStore.isOrganisateur) {
+  } else if (userStore.isOrganisateur) {
     return eventStore.events.filter(
-      (e) => e.createdBy === userStore.user?.name,
+      (event) => event.organizer === userStore.user?.name,
     );
+  } else {
+    return eventStore.events;
   }
-
-  return eventStore.events;
 });
 
 const openCreate = () => {
@@ -85,7 +82,13 @@ const openCreate = () => {
 
 const openEdit = (event) => {
   modalMode.value = "edit";
-  selectedEvent.value = event;
+
+  selectedEvent.value = {
+    ...event,
+    date: event.date.split("T")[0],
+    totalSeats: event.totalseats,
+  };
+
   showModal.value = true;
 };
 
@@ -100,12 +103,12 @@ const openDelete = (event) => {
 
 const confirmDelete = () => {
   if (eventToDelete.value) {
-    eventStore.deleteEvent(eventToDelete.value.id);
+    eventStore.deleteEvent(eventToDelete.value.id_event); // ← id_event
   }
-
   showConfirm.value = false;
   eventToDelete.value = null;
 };
+
 const handleFull = () => {
   showFullModal.value = true;
 };

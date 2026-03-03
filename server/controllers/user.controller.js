@@ -1,41 +1,5 @@
-// Base de données en mémoire
-let users = [
-  {
-    id: 1,
-    email: "admin@test.com",
-    role: "admin",
-    name: "Admin",
-    password: "123456789",
-  },
-  {
-    id: 2,
-    email: "orga1@test.com",
-    role: "organisateur",
-    name: "Organisateur 1",
-    password: "123456789",
-  },
-  {
-    id: 3,
-    email: "part1@test.com",
-    role: "participant",
-    name: "Participant 1",
-    password: "123456789",
-  },
-  {
-    id: 4,
-    email: "orga2@test.com",
-    role: "organisateur",
-    name: "Organisateur 2",
-    password: "123456789",
-  },
-  {
-    id: 5,
-    email: "part2@test.com",
-    role: "participant",
-    name: "Participant 2",
-    password: "123456789",
-  },
-];
+const pool = require("../db");
+const jwt = require("jsonwebtoken");
 
 // =======================
 // LOGIN
@@ -51,30 +15,48 @@ exports.loginUser = async (req, res) => {
       });
     }
 
-    const user = users.find(
-      (u) =>
-        u.email.toLowerCase() === email.toLowerCase() &&
-        u.password === password,
+    // Vérification directe email + password
+    const result = await pool.query(
+      `
+      SELECT * 
+      FROM users
+      WHERE LOWER(email) = LOWER($1)
+        AND password = crypt($2, password)
+      `,
+      [email, password],
     );
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return res.status(401).json({
         success: false,
         message: "Identifiants incorrects",
       });
     }
 
-    res.status(200).json({
+    const user = result.rows[0];
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        role: user.role,
+      },
+      "SECRET_KEY",
+      { expiresIn: "1d" },
+    );
+
+    res.json({
       success: true,
       message: "Connexion réussie",
       user: {
+        id: user.id_user,
+        name: user.name,
         email: user.email,
         role: user.role,
-        name: user.name,
       },
+      token, // 👈 IMPORTANT
     });
   } catch (error) {
-    console.error(error);
+    console.error("LOGIN ERROR:", error);
     res.status(500).json({
       success: false,
       message: "Erreur serveur",
@@ -85,83 +67,175 @@ exports.loginUser = async (req, res) => {
 // =======================
 // REGISTER
 // =======================
-exports.registerUser = (req, res) => {
-  const { name, email, password } = req.body;
+exports.registerUser = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: "Champs requis" });
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: "Tous les champs sont requis",
+      });
+    }
+
+    // Vérifier si email existe déjà
+    const emailCheck = await pool.query(
+      "SELECT id_user FROM users WHERE LOWER(email) = LOWER($1)",
+      [email],
+    );
+
+    if (emailCheck.rows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Email déjà utilisé",
+      });
+    }
+
+    // Insertion avec hash pgcrypto
+    const result = await pool.query(
+      `INSERT INTO users (name, email, password, role)
+       VALUES ($1, $2, crypt($3, gen_salt('bf')), $4)
+       RETURNING id_user, name, email, role`,
+      [name, email, password, role],
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Utilisateur créé avec succès",
+      user: result.rows[0],
+    });
+  } catch (error) {
+    console.error("REGISTER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+    });
   }
-
-  const exists = users.find(
-    (u) => u.email.toLowerCase() === email.toLowerCase(),
-  );
-
-  if (exists) {
-    return res.status(409).json({ message: "Email déjà utilisé" });
-  }
-
-  const newUser = {
-    id: Date.now(),
-    name,
-    email,
-    password,
-    role: "participant", // 👈 rôle par défaut
-  };
-
-  users.push(newUser);
-
-  res.status(201).json(newUser);
 };
 
 // =======================
-// GET ALL USER
+// GET ALL USERS
 // =======================
-exports.getAllUsers = (req, res) => {
-  res.json(users);
+exports.getAllUsers = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id_user, name, email, role FROM users ORDER BY id_user ASC",
+    );
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("GET ALL USERS ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+    });
+  }
 };
 
 // =======================
 // GET ONE USER
 // =======================
-exports.getUserById = (req, res) => {
-  const { id } = req.params;
+exports.getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  const user = users.find((u) => u.id == id);
+    const result = await pool.query(
+      "SELECT id_user, name, email, role FROM users WHERE id_user = $1",
+      [id],
+    );
 
-  if (!user) {
-    return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur non trouvé",
+      });
+    }
+
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error("GET USER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+    });
   }
-
-  res.json(user);
 };
 
 // =======================
 // UPDATE USER
 // =======================
-exports.updateUser = (req, res) => {
-  const { id } = req.params;
+exports.updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, role } = req.body;
 
-  const index = users.findIndex((u) => u.id == id);
+    const result = await pool.query(
+      `UPDATE users
+       SET name = COALESCE($1, name),
+           email = COALESCE($2, email),
+           role = COALESCE($3, role)
+       WHERE id_user = $4
+       RETURNING id_user, name, email, role`,
+      [name, email, role, id],
+    );
 
-  if (index === -1) {
-    return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur non trouvé",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Utilisateur mis à jour",
+      user: result.rows[0],
+    });
+  } catch (error) {
+    console.error("UPDATE ERROR:", error);
+
+    if (error.code === "23505") {
+      return res.status(409).json({
+        success: false,
+        message: "Email déjà utilisé",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+    });
   }
-
-  users[index] = {
-    ...users[index],
-    ...req.body,
-  };
-
-  res.json(users[index]);
 };
 
 // =======================
 // DELETE USER
 // =======================
-exports.deleteUser = (req, res) => {
-  const { id } = req.params;
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  users = users.filter((u) => u.id != id);
+    const result = await pool.query(
+      "DELETE FROM users WHERE id_user = $1 RETURNING id_user",
+      [id],
+    );
 
-  res.json({ message: "Utilisateur supprimé" });
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur non trouvé",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Utilisateur supprimé avec ses events et inscriptions",
+    });
+  } catch (error) {
+    console.error("DELETE USER ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+    });
+  }
 };

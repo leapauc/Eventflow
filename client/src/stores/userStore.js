@@ -1,18 +1,12 @@
 import { defineStore } from "pinia";
-import { useRegistrationStore } from "./registrationStore";
+import api from "@/services/api";
 
 export const useUserStore = defineStore("user", {
   state: () => ({
-    user: null,
-    token: null,
-
-    users: JSON.parse(localStorage.getItem("users")) || [
-      { id: 1, name: "Admin", email: "admin@test.com", role: "admin" },
-      { id: 2, name: "Orga 1", email: "orga1@test.com", role: "organisateur" },
-      { id: 3, name: "Part 1", email: "part1@test.com", role: "participant" },
-      { id: 4, name: "Orga 2", email: "orga2@test.com", role: "organisateur" },
-      { id: 5, name: "Part 2", email: "part2@test.com", role: "participant" },
-    ],
+    user: JSON.parse(localStorage.getItem("user")) || null,
+    token: localStorage.getItem("token") || null,
+    users: [],
+    loading: false,
   }),
 
   getters: {
@@ -23,85 +17,60 @@ export const useUserStore = defineStore("user", {
 
   actions: {
     // =====================
-    // AUTH
+    // LOGIN
     // =====================
+    async login(email, password) {
+      const response = await api.post("/user/auth/login", {
+        email,
+        password,
+      });
 
-    login(user, token) {
-      this.user = user;
-      this.token = token;
+      this.user = response.data.user;
+      this.token = response.data.token; // 👈 important
+
+      localStorage.setItem("user", JSON.stringify(this.user));
+      localStorage.setItem("token", this.token);
     },
 
+    // =====================
+    // LOGOUT
+    // =====================
     logout() {
       this.user = null;
       this.token = null;
+
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
     },
 
     // =====================
-    // LOCAL STORAGE
+    // REGISTER
     // =====================
+    async createUser(userData) {
+      const response = await api.post("/user/auth/register", userData);
 
-    saveToLocalStorage() {
-      localStorage.setItem("users", JSON.stringify(this.users));
+      return response.data;
     },
 
     // =====================
-    // CRUD USERS
+    // GET USERS (admin)
     // =====================
-
-    getAllUsers() {
-      return this.users;
+    async fetchUsers() {
+      const response = await api.get("/user");
+      this.users = response.data;
     },
 
-    getUserById(id) {
-      return this.users.find((u) => u.id === id);
-    },
+    // =====================
+    // DELETE USER
+    // =====================
+    async deleteUser(id_user) {
+      await api.delete(`/user/${id_user}`);
 
-    createUser({ name, email, role = "participant" }) {
-      const newUser = {
-        id: Date.now(),
-        name,
-        email,
-        role,
-      };
+      await this.fetchUsers();
 
-      this.users.push(newUser);
-      this.saveToLocalStorage();
-
-      return newUser;
-    },
-
-    updateUser(id, updatedData) {
-      const index = this.users.findIndex((u) => u.id === id);
-      if (index === -1) return;
-
-      const oldRole = this.users[index].role;
-
-      this.users[index] = {
-        ...this.users[index],
-        ...updatedData,
-      };
-
-      // 🔥 Si rôle change
-      if (oldRole !== updatedData.role) {
-        const registrationStore = useRegistrationStore();
-        registrationStore.removeUserFromAllEvents(id);
-
-        // 🔥 Si utilisateur connecté
-        if (this.user && this.user.id === id) {
-          this.user = { ...this.users[index] };
-        }
+      if (this.user?.id_user === id_user) {
+        this.logout();
       }
-
-      this.saveToLocalStorage();
-    },
-
-    deleteUser(id) {
-      const registrationStore = useRegistrationStore();
-
-      registrationStore.removeUserFromAllEvents(id);
-
-      this.users = this.users.filter((u) => u.id !== id);
-      this.saveToLocalStorage();
     },
   },
 });

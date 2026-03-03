@@ -1,64 +1,98 @@
 import { defineStore } from "pinia";
+import api from "@/services/api"; // ton axios configuré
 
 export const useEventStore = defineStore("event", {
   state: () => ({
-    events: JSON.parse(localStorage.getItem("events")) || [],
+    events: [],
+    loading: false,
   }),
 
   actions: {
-    saveToLocalStorage() {
-      localStorage.setItem("events", JSON.stringify(this.events));
-    },
-
+    // =====================
+    // GET EVENTS FROM BACKEND
+    // =====================
     async fetchEvents() {
-      if (this.events.length === 0) {
-        this.events = [
-          {
-            id: 1,
-            title: "Vue Conference",
-            description: "Conférence sur Vue 3",
-            date: "2025-10-10",
-            location: "Paris",
-            totalSeats: 50,
-            remainingSeats: 50,
-            createdBy: "Admin",
-          },
-        ];
+      try {
+        this.loading = true;
 
-        this.saveToLocalStorage();
+        const response = await api.get("/event");
+
+        this.events = response.data;
+      } catch (error) {
+        console.error("FETCH EVENTS ERROR:", error);
+      } finally {
+        this.loading = false;
       }
     },
 
-    addEvent(event) {
-      this.events.push(event);
-      this.saveToLocalStorage();
-    },
-    deleteEvent(id) {
-      this.events = this.events.filter((event) => event.id !== id);
-      this.saveToLocalStorage();
-    },
-    registerForEvent(eventId) {
-      const event = this.events.find((e) => e.id === eventId);
-      if (!event) return false;
-
-      if (event.remainingSeats <= 0) return false;
-
-      event.remainingSeats -= 1;
-      this.saveToLocalStorage();
-
-      return true;
-    },
-    unregisterFromEvent(eventId) {
-      const event = this.events.find((e) => e.id === eventId);
-
-      if (!event) return;
-
-      // On évite de dépasser totalSeats
-      if (event.remainingSeats < event.totalSeats) {
-        event.remainingSeats += 1;
+    // =====================
+    // CREATE EVENT
+    // =====================
+    async addEvent(eventData) {
+      try {
+        await api.post("/event", eventData);
+        await this.fetchEvents();
+      } catch (error) {
+        console.error(error.response?.data);
       }
+    },
 
-      this.saveToLocalStorage();
+    // =====================
+    // UPDATE EVENT
+    // =====================
+    async updateEvent(id_event, data) {
+      try {
+        await api.put(`/event/${id_event}`, data);
+        // Mettre à jour le store local
+        await this.fetchEvents();
+      } catch (error) {
+        console.error("UPDATE EVENT ERROR:", error.response?.data);
+      }
+    },
+    // =====================
+    // DELETE EVENT
+    // =====================
+    async deleteEvent(id) {
+      try {
+        await api.delete(`/event/${id}`);
+
+        await this.fetchEvents();
+      } catch (error) {
+        console.error(error.response?.data);
+      }
+    },
+
+    // =====================
+    // REGISTER
+    // =====================
+    async registerForEvent(eventId, userId) {
+      try {
+        await api.post(`/event/${eventId}/register`, {
+          id_user: userId,
+        });
+
+        await this.fetchEvents();
+
+        return true;
+      } catch (error) {
+        console.error(error.response?.data);
+        return false;
+      }
+    },
+
+    // =====================
+    // UNREGISTER
+    // =====================
+    async unregisterFromEvent(eventId, userId) {
+      try {
+        await api.delete(`/event/${eventId}/unregister`, {
+          data: { id_user: userId },
+        });
+
+        await this.fetchEvents();
+      } catch (error) {
+        console.error(error.response?.data);
+      }
     },
   },
 });

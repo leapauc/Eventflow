@@ -45,21 +45,17 @@ const error = ref("");
 const userStore = useUserStore();
 const router = useRouter();
 
-const handleLogin = () => {
-  // Vérification simple (email uniquement pour ton système actuel)
-  const foundUser = userStore.users.find(
-    (u) => u.email.toLowerCase() === email.value.toLowerCase(),
-  );
+const handleLogin = async () => {
+  try {
+    error.value = "";
 
-  if (!foundUser) {
-    error.value = "Utilisateur non trouvé";
-    return;
+    await userStore.login(email.value, password.value);
+
+    router.push("/dashboard");
+  } catch (err) {
+    error.value =
+      err.response?.data?.message || "Email ou mot de passe incorrect";
   }
-
-  // Connexion
-  userStore.login(foundUser, "fake-token");
-
-  router.push("/dashboard");
 };
 </script>
 
