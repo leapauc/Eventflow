@@ -46,22 +46,20 @@ const userStore = useUserStore();
 const router = useRouter();
 
 const handleLogin = () => {
-  const users = [
-    { email: "admin@test.com", role: "admin", name: "Admin" },
-    { email: "orga1@test.com", role: "organisateur", name: "Organisateur 1" },
-    { email: "orga2@test.com", role: "organisateur", name: "Organisateur 2" },
-    { email: "part1@test.com", role: "participant", name: "Participant 1" },
-    { email: "part2@test.com", role: "participant", name: "Participant 2" },
-  ];
+  // Vérification simple (email uniquement pour ton système actuel)
+  const foundUser = userStore.users.find(
+    (u) => u.email.toLowerCase() === email.value.toLowerCase(),
+  );
 
-  const foundUser = users.find((u) => u.email === email.value);
-
-  if (foundUser) {
-    userStore.login(foundUser, "fake-token");
-    router.push("/dashboard");
-  } else {
+  if (!foundUser) {
     error.value = "Utilisateur non trouvé";
+    return;
   }
+
+  // Connexion
+  userStore.login(foundUser, "fake-token");
+
+  router.push("/dashboard");
 };
 </script>
 

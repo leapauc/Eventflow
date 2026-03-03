@@ -23,7 +23,7 @@ export default {
     const isRegistered = computed(() => {
       return registrationStore.isUserRegistered(
         props.event.id,
-        userStore.user?.name,
+        userStore.user?.id,
       );
     });
 
@@ -39,14 +39,15 @@ export default {
       const success = eventStore.registerForEvent(props.event.id);
 
       if (success) {
-        registrationStore.register(props.event.id, userStore.user?.name);
+        registrationStore.register(props.event.id, userStore.user?.id);
       }
     };
 
     const handleUnregister = () => {
-      const userName = userStore.user?.name;
+      const userId = userStore.user?.id;
 
-      registrationStore.unregister(props.event.id, userName);
+      registrationStore.unregister(props.event.id, userId);
+
       eventStore.unregisterFromEvent(props.event.id);
     };
 

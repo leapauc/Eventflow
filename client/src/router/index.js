@@ -18,6 +18,12 @@ const routes = [
       role: ["admin", "organisateur", "participant"],
     },
   },
+  {
+    path: "/users",
+    name: "UserManagement",
+    component: () => import("../pages/UserManagement.vue"),
+    meta: { requiresAdmin: true },
+  },
 ];
 
 const router = createRouter({

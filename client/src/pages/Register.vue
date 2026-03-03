@@ -31,6 +31,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import BaseButton from "../components/BaseButton/BaseButton.vue";
+import { useUserStore } from "../stores/userStore";
 
 const name = ref("");
 const email = ref("");
@@ -39,19 +40,32 @@ const error = ref("");
 
 const router = useRouter();
 
+const userStore = useUserStore();
+
 const handleRegister = () => {
   if (!name.value || !email.value || !password.value) {
     error.value = "Tous les champs sont obligatoires";
     return;
   }
 
-  console.log("Utilisateur créé :", {
+  const existing = userStore.users.find(
+    (u) => u.email.toLowerCase() === email.value.toLowerCase(),
+  );
+
+  if (existing) {
+    error.value = "Email déjà utilisé";
+    return;
+  }
+
+  const newUser = userStore.createUser({
     name: name.value,
     email: email.value,
-    password: password.value,
+    role: "participant",
   });
 
-  router.push("/login");
+  userStore.login(newUser, "fake-token");
+
+  router.push("/dashboard");
 };
 </script>
 

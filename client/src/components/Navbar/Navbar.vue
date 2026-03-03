@@ -8,7 +8,10 @@
     </div>
 
     <div v-else>
-      <router-link to="/dashboard">Dashboard</router-link>
+      <router-link to="/dashboard">Dashboard event</router-link>
+      <router-link v-if="userStore.isAdmin" to="/users">
+        Gestion utilisateurs
+      </router-link>
       <button @click="logout">Logout</button>
     </div>
   </nav>
