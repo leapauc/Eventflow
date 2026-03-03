@@ -3,16 +3,16 @@
     <h2 class="title">🛡 Gestion des utilisateurs</h2>
 
     <div class="users-grid">
-      <div v-for="user in userStore.users" :key="user.id" class="user-card">
-        <div class="avatar">
-          {{ user.name.charAt(0).toUpperCase() }}
-        </div>
+      <div
+        v-for="user in userStore.users"
+        :key="user.id_user"
+        class="user-card"
+      >
+        <div class="avatar">{{ user.name.charAt(0).toUpperCase() }}</div>
 
         <div class="info">
           <input v-model="user.name" @change="updateUser(user)" />
-
           <input v-model="user.email" @change="updateUser(user)" />
-
           <select v-model="user.role" @change="updateUser(user)">
             <option value="participant">Participant</option>
             <option value="organisateur">Organisateur</option>
@@ -20,27 +20,35 @@
           </select>
         </div>
 
-        <button class="btn-delete" @click="deleteUser(user.id)">❌</button>
+        <button class="btn-delete" @click="deleteUser(user.id_user)">❌</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { onMounted } from "vue";
 import { useUserStore } from "../stores/userStore";
 
 const userStore = useUserStore();
 
+// Charger les utilisateurs au montage
+onMounted(() => {
+  userStore.fetchUsers();
+});
+
+// Mettre à jour un utilisateur
 const updateUser = (user) => {
-  userStore.updateUser(user.id, {
+  userStore.updateUser(user.id_user, {
     name: user.name,
     email: user.email,
     role: user.role,
   });
 };
 
-const deleteUser = (id) => {
-  userStore.deleteUser(id);
+// Supprimer un utilisateur
+const deleteUser = (id_user) => {
+  userStore.deleteUser(id_user);
 };
 </script>
 

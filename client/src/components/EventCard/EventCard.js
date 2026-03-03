@@ -23,31 +23,34 @@ export default {
     const isRegistered = computed(() => {
       return registrationStore.isUserRegistered(
         props.event.id_event,
-        userStore.user?.id_user,
+        userStore.user?.id,
       );
     });
 
     const buttonText = computed(() => {
-      if (props.event.remaining_seats === 0) return "Complet";
-      if (isRegistered.value) return "Déjà inscrit";
+      if (isRegistered.value) return "Déjà inscrit"; // priorité 1
+      if (props.event.remaining_seats === 0) return "Complet"; // priorité 2
       return "S'inscrire";
     });
 
-    const handleRegister = () => {
-      if (props.event.remaining_seats <= 0) return;
+    const handleRegister = async () => {
+      const userId = userStore.user?.id;
+      if (!userId || props.event.remaining_seats <= 0) return;
 
-      const success = eventStore.registerForEvent(props.event.id_event);
-
-      if (success) {
-        registrationStore.register(props.event.id_event, userStore.user?.name);
-      }
+      await registrationStore.register(props.event.id_event, userId);
+      // Mettre à jour localement pour le rendu immédiat
+      props.event.remaining_seats = Math.max(
+        0,
+        props.event.remaining_seats - 1,
+      );
     };
 
-    const handleUnregister = () => {
-      const userName = userStore.user?.name;
+    const handleUnregister = async () => {
+      const userId = userStore.user?.id;
+      if (!userId) return;
 
-      registrationStore.unregister(props.event.id_event, userName);
-      eventStore.unregisterFromEvent(props.event.id_event);
+      await registrationStore.unregister(props.event.id_event, userId);
+      props.event.remaining_seats += 1;
     };
 
     const handleEdit = () => emit("edit", props.event);

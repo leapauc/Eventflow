@@ -68,6 +68,33 @@ exports.getEventById = async (req, res) => {
   }
 };
 
+exports.getRegistrationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      `
+      SELECT e.id_event AS "eventId", e.id_user AS "userId"
+      FROM events_submit e
+      WHERE e.id_user = $1
+    `,
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(200).json([]); // aucun événement inscrit → tableau vide
+    }
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("GET REGISTRATIONS ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur",
+    });
+  }
+};
+
 // =======================
 // CREATE
 // =======================

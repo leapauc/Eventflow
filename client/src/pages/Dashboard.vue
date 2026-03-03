@@ -45,9 +45,11 @@ import EventCard from "../components/EventCard/EventCard.vue";
 import EventModal from "../components/EventModal/EventModal.vue";
 import BaseButton from "../components/BaseButton/BaseButton.vue";
 import ConfirmModal from "../components/ConfirmModal/ConfirmModal.vue";
+import { useRegistrationStore } from "../stores/registrationStore";
 
 const eventStore = useEventStore();
 const userStore = useUserStore();
+const registrationStore = useRegistrationStore();
 
 const showModal = ref(false);
 const modalMode = ref("create");
@@ -57,8 +59,11 @@ const showFullModal = ref(false);
 const selectedEvent = ref(null);
 
 // Récupération des événements au chargement
-onMounted(() => {
-  eventStore.fetchEvents();
+onMounted(async () => {
+  await eventStore.fetchEvents();
+  if (userStore.user?.id) {
+    await registrationStore.fetchRegistrations(userStore.user.id);
+  }
 });
 
 // Tous les utilisateurs voient tous les événements

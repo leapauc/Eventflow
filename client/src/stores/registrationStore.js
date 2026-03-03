@@ -19,6 +19,17 @@ export const useRegistrationStore = defineStore("registration", {
   },
 
   actions: {
+    async fetchRegistrations(userId) {
+      try {
+        this.loading = true;
+        const response = await api.get(`/event/${userId}/registrations`);
+        this.registrations = response.data; // [{ eventId, userId }, ...]
+      } catch (error) {
+        console.error(error.response?.data);
+      } finally {
+        this.loading = false;
+      }
+    },
     // =====================
     // INSCRIPTION
     // =====================

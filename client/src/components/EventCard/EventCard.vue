@@ -1,7 +1,15 @@
 <template>
   <div class="card" :class="{ registered: isRegistered }">
-    <!-- Badge -->
+    <!-- Badge pour inscrit -->
     <div v-if="isRegistered" class="badge">✔ Inscrit</div>
+
+    <!-- Badge pour complet -->
+    <div
+      v-else-if="!isRegistered && event.remaining_seats < 1"
+      class="badge_full"
+    >
+      Complet
+    </div>
 
     <h3>{{ event.title }}</h3>
 
@@ -31,12 +39,13 @@
 
       <!-- Participant -->
       <button
-        v-if="userStore.isParticipant && !isRegistered"
+        v-if="
+          userStore.isParticipant && !isRegistered && event.remaining_seats > 0
+        "
         class="register-btn"
-        :disabled="event.remainingSeats === 0"
         @click="handleRegister"
       >
-        {{ buttonText }}
+        S'inscrire
       </button>
 
       <button

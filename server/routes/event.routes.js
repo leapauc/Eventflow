@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getAllEvents,
   getEventById,
+  getRegistrationById,
   createEvent,
   updateEvent,
   deleteEvent,
@@ -13,6 +14,7 @@ const router = express.Router();
 
 router.get("/", getAllEvents);
 router.get("/:id", getEventById);
+router.get("/:id/registrations", getRegistrationById);
 router.post("/", createEvent);
 router.post("/:id/register", registerToEvent);
 router.put("/:id", updateEvent);
