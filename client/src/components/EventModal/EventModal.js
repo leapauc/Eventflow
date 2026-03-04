@@ -53,7 +53,6 @@ export default {
       // Vérifier que l'utilisateur est connecté
       if (props.mode === "create" && !userId) {
         alert("Erreur : utilisateur non connecté !");
-        console.error("Utilisateur non connecté :", userStore.user);
         return;
       }
 
@@ -68,16 +67,10 @@ export default {
 
       if (props.mode === "create") {
         eventPayload.createdBy = userId; // <-- l'ID correct
-        console.log("Création d'un nouvel événement :", eventPayload);
         await eventStore.addEvent(eventPayload);
       }
 
       if (props.mode === "edit") {
-        console.log(
-          "Mise à jour de l'événement ID:",
-          props.eventData.id_event,
-          eventPayload,
-        );
         await eventStore.updateEvent(props.eventData.id_event, eventPayload);
       }
 

@@ -2,10 +2,7 @@
   <div>
     <h2>Dashboard Events</h2>
 
-    <BaseButton
-      v-if="userStore.isAdmin || userStore.isOrganisateur"
-      @click="openCreate"
-    >
+    <BaseButton v-if="userStore.isOrganisateur" @click="openCreate">
       + Créer un événement
     </BaseButton>
 

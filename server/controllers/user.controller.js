@@ -165,11 +165,41 @@ exports.getUserById = async (req, res) => {
 // UPDATE USER
 // =======================
 exports.updateUser = async (req, res) => {
+  const client = await pool.connect();
+
   try {
     const { id } = req.params;
     const { name, email, role } = req.body;
 
-    const result = await pool.query(
+    await client.query("BEGIN");
+
+    // 1️⃣ Récupérer l'utilisateur actuel
+    const currentUserResult = await client.query(
+      "SELECT * FROM users WHERE id_user = $1",
+      [id],
+    );
+
+    if (currentUserResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        success: false,
+        message: "Utilisateur non trouvé",
+      });
+    }
+
+    const currentUser = currentUserResult.rows[0];
+
+    // 2️⃣ Vérifier si le rôle change
+    if (role && role !== currentUser.role) {
+      // 🔥 Supprimer les events créés par l'utilisateur
+      await client.query("DELETE FROM events WHERE createdBy = $1", [id]);
+
+      // 🔥 Supprimer ses inscriptions
+      await client.query("DELETE FROM events_submit WHERE id_user = $1", [id]);
+    }
+
+    // 3️⃣ Mettre à jour l'utilisateur
+    const result = await client.query(
       `UPDATE users
        SET name = COALESCE($1, name),
            email = COALESCE($2, email),
@@ -179,12 +209,7 @@ exports.updateUser = async (req, res) => {
       [name, email, role, id],
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Utilisateur non trouvé",
-      });
-    }
+    await client.query("COMMIT");
 
     res.status(200).json({
       success: true,
@@ -192,6 +217,7 @@ exports.updateUser = async (req, res) => {
       user: result.rows[0],
     });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("UPDATE ERROR:", error);
 
     if (error.code === "23505") {
@@ -205,6 +231,8 @@ exports.updateUser = async (req, res) => {
       success: false,
       message: "Erreur serveur",
     });
+  } finally {
+    client.release();
   }
 };
 

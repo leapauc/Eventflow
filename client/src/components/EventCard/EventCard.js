@@ -41,7 +41,7 @@ export default {
       // Mettre à jour localement pour le rendu immédiat
       props.event.remaining_seats = Math.max(
         0,
-        props.event.remaining_seats - 1,
+        Number(props.event.remaining_seats) - 1,
       );
     };
 
@@ -50,7 +50,10 @@ export default {
       if (!userId) return;
 
       await registrationStore.unregister(props.event.id_event, userId);
-      props.event.remaining_seats += 1;
+      props.event.remaining_seats = Math.max(
+        0,
+        Number(props.event.remaining_seats) + 1,
+      );
     };
 
     const handleEdit = () => emit("edit", props.event);
