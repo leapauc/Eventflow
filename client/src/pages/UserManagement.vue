@@ -24,31 +24,71 @@
       </div>
     </div>
   </div>
+  <Notification
+    v-if="showNotification"
+    :message="notificationMessage"
+    :type="notificationType"
+    @close="showNotification = false"
+  />
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useUserStore } from "../stores/userStore";
+import Notification from "../components/Notification/Notification.vue";
 
 const userStore = useUserStore();
 
-// Charger les utilisateurs au montage
-onMounted(() => {
-  userStore.fetchUsers();
+/* -----------------------
+   Notification state
+------------------------ */
+const showNotification = ref(false);
+const notificationMessage = ref("");
+const notificationType = ref("success");
+
+/* -----------------------
+   Lifecycle
+------------------------ */
+onMounted(async () => {
+  await userStore.fetchUsers();
 });
 
-// Mettre à jour un utilisateur
-const updateUser = (user) => {
-  userStore.updateUser(user.id_user, {
-    name: user.name,
-    email: user.email,
-    role: user.role,
-  });
+/* -----------------------
+   Update user
+------------------------ */
+const updateUser = async (user) => {
+  try {
+    await userStore.updateUser(user.id_user, {
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
+
+    notificationMessage.value = "Utilisateur modifié avec succès ✅";
+    notificationType.value = "success";
+    showNotification.value = true;
+  } catch (error) {
+    notificationMessage.value = "Erreur lors de la modification ❌";
+    notificationType.value = "error";
+    showNotification.value = true;
+  }
 };
 
-// Supprimer un utilisateur
-const deleteUser = (id_user) => {
-  userStore.deleteUser(id_user);
+/* -----------------------
+   Delete user
+------------------------ */
+const deleteUser = async (id_user) => {
+  try {
+    await userStore.deleteUser(id_user);
+
+    notificationMessage.value = "Utilisateur supprimé 🗑️";
+    notificationType.value = "success";
+    showNotification.value = true;
+  } catch (error) {
+    notificationMessage.value = "Erreur lors de la suppression ❌";
+    notificationType.value = "error";
+    showNotification.value = true;
+  }
 };
 </script>
 

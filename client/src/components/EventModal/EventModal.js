@@ -11,7 +11,7 @@ export default {
     eventData: Object,
   },
 
-  emits: ["close"],
+  emits: ["close", "success", "error"],
 
   setup(props, { emit }) {
     const eventStore = useEventStore();
@@ -23,17 +23,18 @@ export default {
     const location = ref("");
     const totalSeats = ref(1);
 
-    // Remplissage automatique en mode edit
+    /* --------------------------
+       Remplissage mode edit
+    --------------------------- */
     watch(
       () => props.eventData,
       (newVal) => {
         if (props.mode === "edit" && newVal) {
           title.value = newVal.title;
           description.value = newVal.description;
-          // Extraire juste la date YYYY-MM-DD pour input type="date"
           date.value = newVal.date.split("T")[0];
           location.value = newVal.location;
-          totalSeats.value = newVal.totalSeats ?? newVal.totalSeats;
+          totalSeats.value = newVal.totalSeats ?? newVal.totalseats ?? 1;
         } else {
           title.value = "";
           description.value = "";
@@ -45,36 +46,46 @@ export default {
       { immediate: true },
     );
 
+    /* --------------------------
+       Close
+    --------------------------- */
     const handleClose = () => emit("close");
 
+    /* --------------------------
+       Submit
+    --------------------------- */
     const handleSubmit = async () => {
-      const userId = userStore.user?.id;
+      try {
+        const userId = userStore.user?.id;
 
-      // Vérifier que l'utilisateur est connecté
-      if (props.mode === "create" && !userId) {
-        alert("Erreur : utilisateur non connecté !");
-        return;
+        if (props.mode === "create" && !userId) {
+          emit("error", "create");
+          return;
+        }
+
+        const eventPayload = {
+          title: title.value,
+          description: description.value,
+          date: new Date(date.value).toISOString(),
+          location: location.value,
+          totalSeats: totalSeats.value,
+        };
+
+        if (props.mode === "create") {
+          eventPayload.createdBy = userId;
+          await eventStore.addEvent(eventPayload);
+          emit("success", "create");
+        }
+
+        if (props.mode === "edit") {
+          await eventStore.updateEvent(props.eventData.id_event, eventPayload);
+          emit("success", "edit");
+        }
+
+        emit("close");
+      } catch (error) {
+        emit("error", props.mode);
       }
-
-      // Construction de l'objet événement
-      const eventPayload = {
-        title: title.value,
-        description: description.value,
-        date: new Date(date.value).toISOString(),
-        location: location.value,
-        totalSeats: totalSeats.value,
-      };
-
-      if (props.mode === "create") {
-        eventPayload.createdBy = userId; // <-- l'ID correct
-        await eventStore.addEvent(eventPayload);
-      }
-
-      if (props.mode === "edit") {
-        await eventStore.updateEvent(props.eventData.id_event, eventPayload);
-      }
-
-      emit("close");
     };
 
     return {

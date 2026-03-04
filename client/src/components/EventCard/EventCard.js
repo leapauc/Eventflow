@@ -1,10 +1,14 @@
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useUserStore } from "../../stores/userStore";
-import { useEventStore } from "../../stores/eventStore";
 import * as registrationStore_1 from "../../stores/registrationStore";
+import Notification from "../Notification/Notification.vue";
 
 export default {
   name: "EventCard",
+
+  components: {
+    Notification,
+  },
 
   props: {
     event: {
@@ -17,8 +21,25 @@ export default {
 
   setup(props, { emit }) {
     const userStore = useUserStore();
-    const eventStore = useEventStore();
     const registrationStore = registrationStore_1.useRegistrationStore();
+
+    /* --------------------------
+       Notification state
+    --------------------------- */
+
+    const notificationMessage = ref("");
+    const notificationType = ref("success");
+    const showNotification = ref(false);
+
+    const triggerNotification = (message, type = "success") => {
+      notificationMessage.value = message;
+      notificationType.value = type;
+      showNotification.value = true;
+    };
+
+    /* --------------------------
+       Computed
+    --------------------------- */
 
     const isRegistered = computed(() => {
       return registrationStore.isUserRegistered(
@@ -28,36 +49,58 @@ export default {
     });
 
     const buttonText = computed(() => {
-      if (isRegistered.value) return "Déjà inscrit"; // priorité 1
-      if (props.event.remaining_seats === 0) return "Complet"; // priorité 2
+      if (isRegistered.value) return "Déjà inscrit";
+      if (props.event.remaining_seats === 0) return "Complet";
       return "S'inscrire";
     });
 
-    const handleRegister = async () => {
-      const userId = userStore.user?.id;
-      if (!userId || props.event.remaining_seats <= 0) return;
+    /* --------------------------
+       Actions
+    --------------------------- */
 
-      await registrationStore.register(props.event.id_event, userId);
-      // Mettre à jour localement pour le rendu immédiat
-      props.event.remaining_seats = Math.max(
-        0,
-        Number(props.event.remaining_seats) - 1,
-      );
+    const handleRegister = async () => {
+      try {
+        const userId = userStore.user?.id;
+        if (!userId || props.event.remaining_seats <= 0) return;
+
+        await registrationStore.register(props.event.id_event, userId);
+
+        props.event.remaining_seats = Math.max(
+          0,
+          Number(props.event.remaining_seats) - 1,
+        );
+
+        triggerNotification("Inscription réussie ✅", "success");
+      } catch (error) {
+        triggerNotification("Erreur lors de l'inscription ❌", "error");
+      }
     };
 
     const handleUnregister = async () => {
-      const userId = userStore.user?.id;
-      if (!userId) return;
+      try {
+        const userId = userStore.user?.id;
+        if (!userId) return;
 
-      await registrationStore.unregister(props.event.id_event, userId);
-      props.event.remaining_seats = Math.max(
-        0,
-        Number(props.event.remaining_seats) + 1,
-      );
+        await registrationStore.unregister(props.event.id_event, userId);
+
+        props.event.remaining_seats = Math.max(
+          0,
+          Number(props.event.remaining_seats) + 1,
+        );
+
+        triggerNotification("Désinscription réussie ✅", "warning");
+      } catch (error) {
+        triggerNotification("Erreur lors de la désinscription ❌", "error");
+      }
     };
 
-    const handleEdit = () => emit("edit", props.event);
-    const handleDelete = () => emit("delete", props.event);
+    const handleEdit = () => {
+      emit("edit", props.event);
+    };
+
+    const handleDelete = () => {
+      emit("delete", props.event);
+    };
 
     return {
       userStore,
@@ -67,6 +110,9 @@ export default {
       handleUnregister,
       handleEdit,
       handleDelete,
+      notificationMessage,
+      notificationType,
+      showNotification,
     };
   },
 };

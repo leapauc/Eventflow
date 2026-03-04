@@ -57,6 +57,12 @@
       </button>
     </div>
   </div>
+  <Notification
+    v-if="showNotification"
+    :message="notificationMessage"
+    :type="notificationType"
+    @close="showNotification = false"
+  />
 </template>
 
 <script src="./EventCard.js"></script>
