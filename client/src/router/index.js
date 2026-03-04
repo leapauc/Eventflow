@@ -31,11 +31,17 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from) => {
+router.beforeEach((to) => {
   const userStore = useUserStore();
 
-  if (to.meta.requiresAuth && !userStore.token) {
+  const isAuthenticated = !!userStore.token;
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
     return "/login";
+  }
+
+  if (to.meta.requiresAdmin && userStore.user?.role !== "admin") {
+    return "/";
   }
 
   if (to.meta.role && !to.meta.role.includes(userStore.user?.role)) {

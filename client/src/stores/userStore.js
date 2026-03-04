@@ -16,6 +16,10 @@ export const useUserStore = defineStore("user", {
   },
 
   actions: {
+    init() {
+      this.user = JSON.parse(localStorage.getItem("user"));
+      this.token = localStorage.getItem("token");
+    },
     // LOGIN
     async login(email, password) {
       const response = await api.post("/user/auth/login", { email, password });
