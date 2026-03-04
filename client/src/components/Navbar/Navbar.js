@@ -4,13 +4,21 @@ import { useRouter } from "vue-router";
 export default {
   name: "Navbar",
 
-  setup() {
+  emits: ["notify"],
+
+  setup(props, { emit }) {
     const userStore = useUserStore();
     const router = useRouter();
 
     const logout = () => {
-      userStore.logout(); // supprimer token + user
-      router.push("/"); // redirection vers Home
+      userStore.logout();
+      router.push("/");
+
+      // 🔔 Notification
+      emit("notify", {
+        message: "Déconnexion réussie 👋",
+        type: "success",
+      });
     };
 
     return {
