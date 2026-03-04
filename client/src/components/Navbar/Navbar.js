@@ -11,10 +11,13 @@ export default {
     const router = useRouter();
 
     const logout = () => {
+      const confirmLogout = confirm("Voulez-vous vraiment vous déconnecter ?");
+
+      if (!confirmLogout) return;
+
       userStore.logout();
       router.push("/");
 
-      // 🔔 Notification
       emit("notify", {
         message: "Déconnexion réussie 👋",
         type: "success",
